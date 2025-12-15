@@ -5,10 +5,10 @@ void Jogador::DesenhaRect(GLfloat height, GLfloat width, GLfloat R, GLfloat G, G
 {
     glColor3f(R, G, B);
     glBegin(GL_POLYGON);
-    glVertex2f(-width / 2.0, 0.0);     // Base Esquerda
-    glVertex2f(width / 2.0, 0.0);      // Base Direita
-    glVertex2f(width / 2.0, -height);  // Topo Direito
-    glVertex2f(-width / 2.0, -height); // Topo Esquerdo
+    glVertex2f(-width / 2.0, 0.0);   
+    glVertex2f(width / 2.0, 0.0);      
+    glVertex2f(width / 2.0, -height);  
+    glVertex2f(-width / 2.0, -height);
     glEnd();
 }
 
@@ -28,9 +28,9 @@ void Jogador::DesenhaCirc(GLint radius, GLfloat R, GLfloat G, GLfloat B)
 void Jogador::DesenhaBraco(GLfloat R, GLfloat G, GLfloat B)
 {
     glPushMatrix();
-    glTranslatef(gRadius * 1.5f, gRadius * 1.5f, 0);
+    glTranslatef(gRadius * 1.75f,0, 0);
 
-    glRotatef(gThetaBraco, 0, 0, 1);
+    glRotatef(-gThetaBraco + 180, 0, 0, 1);
 
     DesenhaRect(gRadius * 1.5, gRadius * 0.3, R, G, B);
     glPopMatrix();
@@ -65,7 +65,7 @@ void Jogador::DesenhaJogador(GLfloat x, GLfloat y, GLfloat thetaCorpo)
     DesenhaCirc(gRadius, gR, gG, gB);
 
     float altTronco = gRadius * 0.7f;
-    float largTronco = gRadius * 3.5f;
+    float largTronco = gRadius * 4.0f;
 
     glPushMatrix();
     glTranslatef(0, altTronco / 2.0f, 0);
@@ -85,7 +85,7 @@ void Jogador::DesenhaJogador(GLfloat x, GLfloat y, GLfloat thetaCorpo)
     glPopMatrix();
 }
 
-void Jogador::Move(GLfloat dist)
+void Jogador::Move(GLfloat dist, GLdouble timeDiference)
 {
 
     float rad = gThetaCorpo * M_PI / 180.0;
@@ -95,7 +95,7 @@ void Jogador::Move(GLfloat dist)
 
     if (gThetaPernas > 45 || gThetaPernas < -45)
         gVelocidade *= -1;
-    gThetaPernas += gVelocidade * 0.5;
+    gThetaPernas += gVelocidade * timeDiference;
 }
 
 void Jogador::Roda(GLfloat inc)
@@ -117,3 +117,57 @@ void Jogador::SetaPosicao(float x, float y)
     gX = x;
     gY = y;
 }
+
+void RotatePoint(GLfloat x, GLfloat y, GLfloat angleDeg, GLfloat &xOut, GLfloat &yOut)
+{
+    GLfloat rad = angleDeg * M_PI / 180.0f;
+    xOut = x * cosf(rad) - y * sinf(rad);
+    yOut = x * sinf(rad) + y * cosf(rad);
+}
+
+Tiro* Jogador::Atira(float velJogador)
+{
+    GLfloat altBraco = gRadius * 1.5f;
+    GLfloat baseX = 0.0f, baseY = 0.0f;
+    GLfloat tipX  = 0.0f, tipY  = -altBraco;   
+
+    GLfloat baseX_arm, baseY_arm;
+    GLfloat tipX_arm,  tipY_arm;
+
+    RotatePoint(baseX, baseY, -gThetaBraco + 180.0f, baseX_arm, baseY_arm);
+    RotatePoint(tipX,  tipY,  -gThetaBraco + 180.0f, tipX_arm,  tipY_arm);
+
+    GLfloat ombroX = gRadius * 1.75f;
+    GLfloat ombroY = 0.0f;
+
+    baseX_arm += ombroX;
+    baseY_arm += ombroY;
+    tipX_arm  += ombroX;
+    tipY_arm  += ombroY;
+
+    GLfloat baseX_body, baseY_body;
+    GLfloat tipX_body,  tipY_body;
+
+    RotatePoint(baseX_arm, baseY_arm, gThetaCorpo, baseX_body, baseY_body);
+    RotatePoint(tipX_arm,  tipY_arm,  gThetaCorpo, tipX_body,  tipY_body);
+
+    GLfloat baseX_world = baseX_body + gX;
+    GLfloat baseY_world = baseY_body + gY;
+    GLfloat tipX_world  = tipX_body  + gX;
+    GLfloat tipY_world  = tipY_body  + gY;
+
+    GLfloat dirX = tipX_world - baseX_world;
+    GLfloat dirY = tipY_world - baseY_world;
+
+    GLfloat angRadX = atan2f(dirY, dirX);
+    GLfloat angDegX = angRadX * 180.0f / M_PI;
+
+    GLfloat directionAng = 90.0f - angDegX; 
+
+    GLfloat velTiro = 2.0f * velJogador;
+
+    return new Tiro(tipX_world, tipY_world, directionAng, velTiro, gP);
+}
+
+
+
